@@ -16,6 +16,7 @@ class VllmClient(object):
         self.session = []
 
     def generate(self, prompt: str,
+                sys_prompt=None,
                 stream=True,
                 max_tokens: int = 1024,
                 stop: List[str] = [], #生成到这些字符串的时候停止
@@ -26,8 +27,10 @@ class VllmClient(object):
                 temperature=0.1
                 ):
         st = time.time()
+        if sys_prompt is None:
+            sys_prompt = self.sys_prompt
         if self.session is None or len(self.session) == 0:
-            self.session = [{"role": "system", "content": self.sys_prompt}]
+            self.session = [{"role": "system", "content": sys_prompt}]
 
         self.session.append({"role": "user", "content": prompt})
         chat_response = self.client.chat.completions.create(
@@ -42,18 +45,71 @@ class VllmClient(object):
             temperature=temperature,
             stop=[],
         )
-        
-        for chat in chat_response:
-            content = chat.choices[0].delta.content
-            if content:
-                yield content
+        if stream:
+            for chat in chat_response:
+                #print (chat)
+                if hasattr(chat.choices[0].delta, 'reasoning_content'):
+                    reasoning_content = chat.choices[0].delta.reasoning_content
+                    if reasoning_content:
+                        yield reasoning_content, 'reasoning'
+
+                content = chat.choices[0].delta.content
+                if content:
+                    yield content, 'content'
+        else:
+            for chat in chat_response:
+                print (chat)
+            return None
 
 
 SYS_PROMPT = """你是一个万能的AI助手，你叫Ein，由kain开发
 """
 
+def call_llm(client, prompt, sys_prompt = None):
+    first_word = True
+    st = time.time()
+    reasoning = []
+    res = []
+    for word, tp in client.generate(prompt=prompt, sys_prompt=sys_prompt, max_tokens=8192):
+        if first_word:
+            first_word_cost = time.time() - st       
+            first_word = False
+        #print (word, tp)
+        if tp == 'reasoning':
+            reasoning.append(word)
+        if tp == 'content':
+            res.append(word)
+        sys.stdout.write(word)
+        sys.stdout.flush()
+    print()
+    res = ''.join(res)
+    reasoning = ''.join(reasoning)
+    client.session.append({"role": "assistant", "content": res})
+    #print (client.session)
+    cost = time.time() - st
+    print ('tot_cost_time[%s], first_word_cost[%s] char_per_s[%s] char_len[%s]' % (cost, first_word_cost, len(res) / cost, len(res)))
 
-if __name__ == '__main__':
+
+
+def run1():
+    client = VllmClient(sys_prompt = '')
+    while True:
+        # 示例输入
+        input_list = []
+        print ('input:...')
+        while True:
+            tmp = input()
+            if tmp == 'eof':
+                break
+            if tmp == 'clear':
+                client.session.clear()
+                continue
+            input_list.append(tmp)
+        prompt = '\n'.join(input_list)
+        call_llm(client=client, prompt=prompt)
+
+
+def run2():
     client = VllmClient(sys_prompt = '')
     while True:
         # 示例输入
@@ -70,17 +126,9 @@ if __name__ == '__main__':
         prompt = '\n'.join(input_list)
         first_word = True
         st = time.time()
-        res = []
-        for word in client.generate(prompt=prompt):
-            if first_word:
-                first_word_cost = time.time() - st       
-                first_word = False
-            res.append(word)
-            sys.stdout.write(word)
-        print()
-        res = ''.join(res)
-        client.session.append({"role": "assistant", "content": res})
-        print (client.session)
-        cost = time.time() - st
-        print ('tot_cost_time[%s], first_word_cost[%s] char_per_s[%s]' % (cost, first_word_cost, len(res) / cost))
+        res = client.generate(prompt=prompt, stream=False)
+        print (res)
+
     
+if __name__ == '__main__':
+    run1()

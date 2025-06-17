@@ -11,6 +11,9 @@ from dataclasses import dataclass, field
 from typing import Optional, Tuple, Union, List, Dict, Any
 from torch.utils.data import Dataset
 import json
+import os
+import deepspeed
+deepspeed.ops.op_builder.CPUAdamBuilder().load()
 
 from transformers.trainer_pt_utils import LabelSmoother
 IGNORE_TOKEN_ID = LabelSmoother.ignore_index
@@ -76,7 +79,9 @@ def main():
     print ('Loading dataset %s' % data_args.data_path)
     tokenized_ds = make_dataset(data_args.data_path, tokenizer, data_args.max_len)
     print ('Loading pretrain model %s' % pretrain_model_path)
-    model = AutoModelForCausalLM.from_pretrained(pretrain_model_path, device_map="auto", torch_dtype=torch.bfloat16)
+    device_map = {"": int(os.environ.get("LOCAL_RANK") or 0)}
+    print (f'device_map = {device_map}')
+    model = AutoModelForCausalLM.from_pretrained(pretrain_model_path, device_map=device_map, torch_dtype=torch.bfloat16)
     model.enable_input_require_grads() # 开启梯度检查点时，要执行该方法
     
     if training_args.use_lora:
@@ -90,6 +95,8 @@ def main():
             bias=lora_args.lora_bias
         )
         model = get_peft_model(model, lora_config)
+        print ('Using Lora Training...')
+    
     print ('Training...')
     trainer = Trainer(
         model=model,
