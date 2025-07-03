@@ -3,8 +3,9 @@ import pandas as pd
 import torch
 from typing import Optional, Tuple, Union, List, Dict, Any
 import json
+import sys
 from transformers.trainer_pt_utils import LabelSmoother
-from util import dic2json
+from util import dic2json, load_json, write_list_to_jsonl
 IGNORE_TOKEN_ID = LabelSmoother.ignore_index
 
 def preprocess(
@@ -71,7 +72,6 @@ def make_dataset2(data_file, tokenizer, max_len=512):
 
 
 def make_dataset(data_file, tokenizer, max_len=512):
-    # 将JSON文件转换为CSV文件
     df = pd.read_json(data_file, lines=True)
     ds = Dataset.from_pandas(df)
 
@@ -86,6 +86,24 @@ def make_dataset(data_file, tokenizer, max_len=512):
 
     tokenized_ds = ds.map(process_func, remove_columns=ds.column_names)
     return tokenized_ds
+
+
+def make_dataset2(data_file):
+    def process_func(example):
+        messages = [
+            {"role": "system", "content": example['sys_prompt']},
+            {"role": "user", "content": example['text']},
+            {"role": "assistant", "content": example['res']}
+        ]
+        ret = {"messages": messages}
+        return ret
+
+    ret_lis = []
+    for line in open(data_file):
+        ep = json.loads(line.strip())
+        sp = process_func(ep)
+        ret_lis.append(sp)
+    return ret_lis
 
 
 def make_dataset3(data_file, tokenizer, max_len=512):
@@ -104,3 +122,10 @@ def make_dataset3(data_file, tokenizer, max_len=512):
 
     tokenized_ds = ds.map(process_func, remove_columns=ds.column_names)
     return tokenized_ds
+
+if __name__ == '__main__':
+    input_file = sys.argv[1]
+    output_file = sys.argv[2]
+    datas = make_dataset2(input_file)
+    # print (datas)
+    write_list_to_jsonl(datas, output_file)

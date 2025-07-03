@@ -7,6 +7,7 @@
         "hysteresis": 2,
         "min_loss_scale": 1
     },
+
     "optimizer": {
         "type": "AdamW",
         "params": {
@@ -18,10 +19,8 @@
     },
 
     "scheduler": {
-        "type": "WarmupDecayLR",
+        "type": "WarmupLR",
         "params": {
-            "last_batch_iteration": -1,
-            "total_num_steps": "auto",
             "warmup_min_lr": "auto",
             "warmup_max_lr": "auto",
             "warmup_num_steps": "auto"
@@ -29,31 +28,32 @@
     },
 
     "zero_optimization": {
-        "stage": 2,
+        "stage": 3,
         "offload_optimizer": {
             "device": "cpu",
             "pin_memory": true
         },
-        "allgather_partitions": true,
-        "allgather_bucket_size": 5e8,
+        "offload_param": {
+            "device": "cpu",
+            "pin_memory": true
+        },
         "overlap_comm": true,
-        "reduce_scatter": true,
-        "reduce_bucket_size": 5e8,
-        "contiguous_gradients": true
+        "contiguous_gradients": true,
+        "sub_group_size": 1e9,
+        "reduce_bucket_size": "auto",
+        "stage3_prefetch_bucket_size": "auto",
+        "stage3_param_persistence_threshold": "auto",
+        "stage3_max_live_parameters": 1e9,
+        "stage3_max_reuse_distance": 1e9,
+        "stage3_gather_16bit_weights_on_model_save": true
     },
-    "activation_checkpointing": {
-        "partition_activations": true,
-        "cpu_checkpointing": true,
-        "contiguous_memory_optimization": true,
-        "number_checkpoints": null,
-        "synchronize_checkpoint_boundary": false,
-        "profile": false
-    },
+
     "gradient_accumulation_steps": "auto",
     "gradient_clipping": "auto",
     "steps_per_print": 2000,
     "train_batch_size": "auto",
-    "min_lr": 5e-7,
     "train_micro_batch_size_per_gpu": "auto",
     "wall_clock_breakdown": false
 }
+
+

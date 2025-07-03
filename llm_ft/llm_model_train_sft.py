@@ -81,7 +81,9 @@ def main():
     print ('Loading pretrain model %s' % pretrain_model_path)
     device_map = {"": int(os.environ.get("LOCAL_RANK") or 0)}
     print (f'device_map = {device_map}')
-    model = AutoModelForCausalLM.from_pretrained(pretrain_model_path, device_map=device_map, torch_dtype=torch.bfloat16)
+    model = AutoModelForCausalLM.from_pretrained(pretrain_model_path, 
+                                                 # device_map=device_map, 
+                                                 torch_dtype=torch.bfloat16)
     model.enable_input_require_grads() # 开启梯度检查点时，要执行该方法
     
     if training_args.use_lora:

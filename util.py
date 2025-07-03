@@ -146,18 +146,7 @@ def read_ids_from_file(file_path):
     
     return ids
 
-def write_list_to_jsonl(data, output_file):
-    """
-    将一个 Python 列表写入到 JSON Lines 格式的文件中。
 
-    参数:
-    - data: list, 包含字典的列表，每个字典表示一个 JSON 对象。
-    - output_file: str, 输出文件的路径。
-    """
-    with open(output_file, 'w') as f:
-        for item in data:
-            json_line = json.dumps(item)
-            f.write(json_line + '\n')
 
 if __name__ == '__main__':
     lis = list_files_recursive('category_output')

@@ -1,4 +1,4 @@
-num_gpus=5
+num_gpus=6
 # 启动训练前设置环境变量
 #export NCCL_DEBUG=INFO
 #export NCCL_DEBUG_SUBSYS=ALL
@@ -14,12 +14,17 @@ export NCCL_TIMEOUT=1800000  # 超时延长至 30 分钟 (单位：毫秒)
 # export NCCL_IB_DISABLE=1
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export NCCL_P2P_LEVEL=NVL
-CUDA_VISIBLE_DEVICES=0,1,2,3,4 deepspeed --num_gpus $num_gpus llm_model_train_sft.py \
+deepspeed --num_gpus $num_gpus llm_model_train_sft.py \
   --deepspeed ./ds_zero2.json \
   --pretrain_model_path  /root/autodl-tmp/modelscope/models/Qwen/Qwen3-8B/ \
   --data_path data/train6_1k.jsonl \
-  --max_len 8192 \
-  --use_lora False \
+  --max_len 4096 \
+  --use_lora True \
+  --lora_r 32 \
+  --lora_alpha 16 \
+  --lora_dropout 0.05 \
+  --lora_target_modules q_proj k_proj v_proj o_proj up_proj gate_proj down_proj \
+  --lora_bias none \
   --output_dir output/Qwen3_8B_qa \
   --per_device_train_batch_size 1 \
   --gradient_accumulation_steps 8 \

@@ -1,5 +1,5 @@
 CUDA_VISIBLE_DEVICES=0 python -u llm_model_train.py \
-    --pretrain_model_path  /root/autodl-tmp/modelscope/models/Qwen/Qwen3-8B/ \
+    --pretrain_model_path  /root/autodl-tmp/modelscope/models/Qwen/Qwen3-14B/ \
     --data_path data/train6_1w.jsonl \
     --max_len 8192 \
     --use_lora True \
@@ -8,8 +8,8 @@ CUDA_VISIBLE_DEVICES=0 python -u llm_model_train.py \
     --lora_dropout 0.05 \
     --lora_target_modules q_proj k_proj v_proj o_proj up_proj gate_proj down_proj \
     --lora_bias none \
-    --output_dir output/Qwen3_8B_qa_lora2 \
-    --per_device_train_batch_size 2 \
+    --output_dir output/Qwen3_14B_qa_lora \
+    --per_device_train_batch_size 1 \
     --gradient_accumulation_steps 4 \
     --logging_steps 10 \
     --num_train_epochs 2 \
